@@ -1,6 +1,4 @@
-📝 README.md
 
-Crie um arquivo chamado README.md no diretório principal e cole isso:
 
 # LinhaMestre
 
