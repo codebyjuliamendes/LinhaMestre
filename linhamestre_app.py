@@ -206,7 +206,7 @@ def login():
             st.session_state['name'] = user[3]
             st.session_state['access_level'] = user[5]
             st.sidebar.success(f"Bem-vindo, {user[3]}!")
-             st.rerun()# Recarrega a página para atualizar o menu
+            st.rerun()# Recarrega a página para atualizar o menu
         else:
             st.sidebar.error("Usuário ou senha incorretos")
 
