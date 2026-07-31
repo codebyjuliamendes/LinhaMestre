@@ -1360,6 +1360,43 @@ def quality_control_page():
             )
             
             st.plotly_chart(fig_xbar, use_container_width=True)
+
+            # Análise Proativa - Western Electric Rules (Regras de Western Electric)
+            if factors_xbar_r and factors_xbar_r['A2'] != 0:
+                a2 = factors_xbar_r['A2']
+                sigma_xbar = (a2 * mean_range) / 3.0
+                
+                # Regra 1: Fora dos limites de controle (3-sigma)
+                ucl = overall_mean + 3 * sigma_xbar
+                lcl = overall_mean - 3 * sigma_xbar
+                
+                last_idx = len(df) - 1
+                last_val = df['Média'].iloc[last_idx]
+                last_date = df['Data'].iloc[last_idx]
+                
+                rule_violations = []
+                
+                # Check Regra 1
+                if last_val > ucl or last_val < lcl:
+                    rule_violations.append(f"🚨 **Violação da Regra 1 (Limites de Controle):** O último ponto registrado ({last_date}: **{last_val:.3f}**) está fora dos limites de controle $3\\sigma$ (LSC: {ucl:.3f} / LIC: {lcl:.3f}). O processo está instável!")
+                
+                # Check Regra 4: 9 pontos consecutivos no mesmo lado da linha central
+                if len(df) >= 9:
+                    last_9 = df['Média'].iloc[-9:]
+                    all_above = all(x > overall_mean for x in last_9)
+                    all_below = all(x < overall_mean for x in last_9)
+                    if all_above:
+                        rule_violations.append(f"⚠️ **Violação da Regra 4 (Tendência / Drift):** Os últimos 9 pontos consecutivos estão acima da linha central ({overall_mean:.3f}). Existe um desvio sistemático ascendente no processo.")
+                    elif all_below:
+                        rule_violations.append(f"⚠️ **Violação da Regra 4 (Tendência / Drift):** Os últimos 9 pontos consecutivos estão abaixo da linha central ({overall_mean:.3f}). Existe um desvio sistemático descendente no processo.")
+                
+                # Exibir alertas na tela
+                if rule_violations:
+                    st.error("### 🛑 Alertas de Instabilidade Estatística (Western Electric)")
+                    for rule in rule_violations:
+                        st.markdown(rule)
+                else:
+                    st.success("✨ **Diagnóstico do Processo:** O processo está estável sob controle estatístico. Nenhuma regra de Western Electric foi violada nas últimas amostras.")
             
             # Gráfico R
             fig_r = go.Figure()
@@ -1857,6 +1894,7 @@ def users_page():
                                         VALUES (?, ?, ?, ?, ?, ?)''', # Adiciona o salt aqui
                                     (username, hashed_password, name, email, access_level, salt_hex))
                         conn.commit()
+                        log_audit("USER_CREATE", f"Usuário '{username}' cadastrado com nível de acesso '{access_level}'.")
                         st.success("Usuário cadastrado com sucesso!")
                     except sqlite3.IntegrityError:
                         st.error("Nome de usuário já existe. Por favor, escolha outro.")
@@ -1899,6 +1937,7 @@ def users_page():
                             else:
                                 c.execute("DELETE FROM users WHERE id = ?", (user_id,))
                                 conn.commit()
+                                log_audit("USER_DELETE", f"Usuário '{user[1]}' (ID: {user_id}) excluído do sistema.")
                                 st.success("Usuário excluído com sucesso!")
                                 st.rerun()
                     
@@ -1919,6 +1958,7 @@ def users_page():
                                                     WHERE id=?''',
                                                 (new_username, new_name, new_email, new_access_level, user_id))
                                 conn.commit()
+                                log_audit("USER_UPDATE", f"Usuário '{new_username}' (ID: {user_id}) atualizado.")
                                 st.success("Usuário atualizado com sucesso!")
                             except sqlite3.IntegrityError:
                                 st.error("Nome de usuário já existe. Por favor, escolha outro.")
