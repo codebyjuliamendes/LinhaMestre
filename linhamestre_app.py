@@ -82,6 +82,7 @@ def check_hashes(password, stored_salt_hex, stored_hashed_text):
 @st.cache_resource
 def get_connection():
     conn = sqlite3.connect('linhamestre.db', check_same_thread=False)
+    conn.execute("PRAGMA journal_mode=WAL;")  # Enable WAL Mode for concurrent reads
     return conn
 
 conn = get_connection()
@@ -157,10 +158,27 @@ def create_tables():
                  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                  FOREIGN KEY(product_id) REFERENCES products(id),
                  FOREIGN KEY(created_by) REFERENCES users(id))''')
+
+    c.execute('''CREATE TABLE IF NOT EXISTS audit_logs
+                 (id INTEGER PRIMARY KEY AUTOINCREMENT,
+                 user_id INTEGER,
+                 action TEXT,
+                 details TEXT,
+                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                 FOREIGN KEY(user_id) REFERENCES users(id))''')
     
     conn.commit()
 
 create_tables()
+
+# Função auxiliar para registrar logs de auditoria
+def log_audit(action, details):
+    try:
+        user_id = st.session_state.get('user_id', None)
+        c.execute("INSERT INTO audit_logs (user_id, action, details) VALUES (?, ?, ?)", (user_id, action, details))
+        conn.commit()
+    except Exception as e:
+        print(f"[Audit Log Error] {e}")
 
 # Inicializar dados padrão se não existirem
 def init_default_data():
@@ -205,12 +223,14 @@ def login():
             st.session_state['username'] = user[1]
             st.session_state['name'] = user[3]
             st.session_state['access_level'] = user[5]
+            log_audit("LOGIN", f"Usuário {user[1]} realizou login no sistema.")
             st.sidebar.success(f"Bem-vindo, {user[3]}!")
             st.rerun()# Recarrega a página para atualizar o menu
         else:
             st.sidebar.error("Usuário ou senha incorretos")
 
 def logout():
+    log_audit("LOGOUT", f"Usuário {st.session_state.get('username')} saiu do sistema.")
     st.session_state['logged_in'] = False
     st.session_state['user_id'] = None
     st.session_state['username'] = None
@@ -340,13 +360,13 @@ def dashboard_page():
                     if not is_read and st.button("Marcar como lida", key=f"read_{msg_id}"):
                         c.execute("UPDATE messages SET is_read = 1 WHERE id = ?", (msg_id,))
                         conn.commit()
-                        st.experimental_rerun()
+                        st.rerun()
                 with col2:
                     if st.button("Responder", key=f"reply_{msg_id}"):
                         st.session_state['reply_to'] = msg_id
                         st.session_state['reply_sender'] = sender
                         st.session_state['reply_subject'] = f"Re: {subject}"
-                        st.experimental_rerun()
+                        st.rerun()
     else:
         st.info("Nenhuma mensagem não lida.")
 
@@ -388,7 +408,7 @@ def dashboard_page():
                 if st.button("Marcar como concluída", key=f"complete_{task_id}"):
                     c.execute("UPDATE tasks SET status = 'Concluída', completed_at = CURRENT_TIMESTAMP WHERE id = ?", (task_id,))
                     conn.commit()
-                    st.experimental_rerun()
+                    st.rerun()
     else:
         st.success("Nenhuma tarefa pendente no momento.")
 
@@ -540,6 +560,7 @@ def products_page():
                                          expiry_date.strftime("%Y-%m-%d"), # Formata a data para string
                                          quality_status, notes, st.session_state['user_id']))
                             conn.commit()
+                            log_audit("PRODUCT_CREATE", f"Produto '{name}' (Categoria: {category}) cadastrado com estoque de {quantity} {unit}.")
                             st.success("Produto cadastrado com sucesso!")
                         except Exception as e:
                             st.error(f"Erro ao cadastrar produto: {e}")
@@ -595,8 +616,9 @@ def products_page():
                             if st.form_submit_button("Excluir Produto"):
                                 c.execute("DELETE FROM products WHERE id = ?", (product_id,))
                                 conn.commit()
+                                log_audit("PRODUCT_DELETE", f"Produto '{product[1]}' (ID: {product_id}) excluído do inventário.")
                                 st.success("Produto excluído com sucesso!")
-                                st.experimental_rerun()
+                                st.rerun()
                         
                         if submitted:
                             if not name or not category or not quantity or not min_quantity or not unit:
@@ -616,6 +638,7 @@ def products_page():
                                                  quality_status, notes,
                                                  product_id))
                                     conn.commit()
+                                    log_audit("PRODUCT_UPDATE", f"Produto '{name}' (ID: {product_id}) atualizado.")
                                     st.success("Produto atualizado com sucesso!")
                                 except Exception as e:
                                     st.error(f"Erro ao atualizar produto: {e}")
@@ -863,13 +886,13 @@ def messages_page():
                         if not is_read and st.button("Marcar como lida", key=f"read_{msg_id}"):
                             c.execute("UPDATE messages SET is_read = 1 WHERE id = ?", (msg_id,))
                             conn.commit()
-                            st.experimental_rerun()
+                            st.rerun()
                     with col2:
                         if st.button("Responder", key=f"reply_{msg_id}"):
                             st.session_state['reply_to'] = msg_id
                             st.session_state['reply_sender'] = sender
                             st.session_state['reply_subject'] = f"Re: {subject}"
-                            st.experimental_rerun()
+                            st.rerun()
         else:
             st.info("Nenhuma mensagem encontrada com os filtros selecionados.")
     
@@ -1049,7 +1072,7 @@ def tasks_page():
                                             SET status = 'Concluída', completed_at = CURRENT_TIMESTAMP 
                                             WHERE id = ?''', (task_id,))
                                 conn.commit()
-                                st.experimental_rerun()
+                                st.rerun()
         else:
             st.info("Nenhuma tarefa encontrada com os filtros selecionados.")
     
@@ -1181,7 +1204,7 @@ def tasks_page():
                                             SET status = 'Concluída', completed_at = CURRENT_TIMESTAMP 
                                             WHERE id = ?''', (task_id,))
                                 conn.commit()
-                                st.experimental_rerun()
+                                st.rerun()
             else:
                 st.info("Nenhuma tarefa encontrada com os filtros selecionados.")
             
@@ -1416,7 +1439,7 @@ def quality_control_page():
                                     (product_id, control_date.strftime("%Y-%m-%d"), sample_size, mean_value, range_value, std_dev, st.session_state['user_id']))
                         conn.commit()
                         st.success("Dados de controle de qualidade adicionados com sucesso!")
-                        st.experimental_rerun()
+                        st.rerun()
     
     with tab2:
         st.subheader("Gráficos X-Barra e S")
@@ -1877,7 +1900,7 @@ def users_page():
                                 c.execute("DELETE FROM users WHERE id = ?", (user_id,))
                                 conn.commit()
                                 st.success("Usuário excluído com sucesso!")
-                                st.experimental_rerun()
+                                st.rerun()
                     
                     if submitted:
                         if not new_username or not new_name or not new_access_level:

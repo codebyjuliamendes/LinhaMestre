@@ -1,0 +1,118 @@
+/* Custom CSS Stylesheet for LinhaMestre - Glassmorphism Enterprise Theme */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+/* Global Font Override */
+html, body, [class*="css"] {
+    font-family: 'Inter', sans-serif;
+}
+
+/* Sidebar Custom Styling */
+section[data-testid="stSidebar"] {
+    background-color: #0f172a !important;
+    border-right: 1px solid #1e293b;
+}
+
+section[data-testid="stSidebar"] h1 {
+    color: #38bdf8 !important;
+    font-weight: 700;
+}
+
+/* Main Background */
+.main {
+    background-color: #0b0f19;
+    color: #f8fafc;
+}
+
+/* Custom Metric Cards */
+div[data-testid="stMetricValue"] {
+    font-size: 2.2rem !important;
+    font-weight: 700 !important;
+    color: #38bdf8 !important;
+}
+
+div[data-testid="stMetricLabel"] {
+    font-size: 0.9rem !important;
+    font-weight: 500 !important;
+    color: #94a3b8 !important;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+/* Glassmorphic Container for Metrics & Blocks */
+div[data-testid="metric-container"] {
+    background: rgba(30, 41, 59, 0.45) !important;
+    border: 1px solid rgba(255, 255, 255, 0.05) !important;
+    border-radius: 16px !important;
+    padding: 1.25rem !important;
+    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.2) !important;
+    backdrop-filter: blur(8px) !important;
+    -webkit-backdrop-filter: blur(8px) !important;
+    transition: transform 0.2s ease, border-color 0.2s ease;
+}
+
+div[data-testid="metric-container"]:hover {
+    transform: translateY(-2px);
+    border-color: rgba(56, 189, 248, 0.3) !important;
+}
+
+/* Form Styles */
+form[data-testid="stForm"] {
+    background: rgba(15, 23, 42, 0.6) !important;
+    border: 1px solid #1e293b !important;
+    border-radius: 16px !important;
+    padding: 2rem !important;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3) !important;
+}
+
+/* Button Custom Styles */
+div.stButton > button:first-child {
+    background-color: #0284c7 !important;
+    color: #ffffff !important;
+    border: none !important;
+    padding: 0.5rem 1.5rem !important;
+    border-radius: 8px !important;
+    font-weight: 600 !important;
+    transition: all 0.2s ease !important;
+}
+
+div.stButton > button:first-child:hover {
+    background-color: #0369a1 !important;
+    box-shadow: 0 0 12px rgba(3, 105, 161, 0.4) !important;
+    transform: scale(1.02);
+}
+
+/* Red Delete/Cancel Button Specificity */
+div.stButton > button[key*="Excluir"], div.stButton > button:first-child:active {
+    opacity: 0.9;
+}
+
+/* Expander Cards */
+div[data-testid="stExpander"] {
+    background: rgba(30, 41, 59, 0.2) !important;
+    border: 1px solid #1e293b !important;
+    border-radius: 12px !important;
+    overflow: hidden;
+}
+
+div[data-testid="stExpander"] details {
+    border: none !important;
+}
+
+/* Warnings and Success Alerts */
+div[data-testid="element-container"] .stAlert {
+    border-radius: 12px !important;
+    border: 1px solid rgba(255, 255, 255, 0.05) !important;
+}
+
+/* Tables and Dataframes */
+div[data-testid="stDataFrame"] {
+    border: 1px solid #1e293b !important;
+    border-radius: 12px !important;
+    overflow: hidden;
+}
+
+/* Progress bar inside table styling */
+div[role="progressbar"] {
+    background-color: #0369a1 !important;
+}
