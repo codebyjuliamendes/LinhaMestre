@@ -1,151 +1,150 @@
-# 📊 LinhaMestre - Quality Control & Analytics Engine
+# LinhaMestre
 
-[![Python Version](https://img.shields.io/badge/python-%3E%3D%203.9-blue)](https://python.org)
-[![Streamlit Framework](https://img.shields.io/badge/streamlit-v1.25.0-red)](https://streamlit.io)
-[![Plotly Data Viz](https://img.shields.io/badge/plotly-v5.15.0-teal)](https://plotly.com)
-[![Docker Container](https://img.shields.io/badge/docker-ready-emerald)](https://docker.com)
-[![Kubernetes Ready](https://img.shields.io/badge/k8s-manifests-blue)](https://kubernetes.io)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+Painel em Python/Streamlit para **controle estatístico de qualidade (CEP)** e **gestão de estoque** de uma linha de produção: cadastro de produtos, alertas de estoque e validade, gráficos de controle de Shewhart com regras de Western Electric, tarefas e mensagens internas entre perfis de acesso.
 
-LinhaMestre is an enterprise-grade quality control dashboard and stock management engine built in Python and Streamlit. Designed for operational and executive teams, it delivers real-time statistical quality analysis (Pareto, X-Bar, R/S Charts) with transactional security and robust auditing.
+[![CI](https://github.com/codebyjuliamendes/LinhaMestre/actions/workflows/ci.yml/badge.svg)](https://github.com/codebyjuliamendes/LinhaMestre/actions/workflows/ci.yml)
+![Python](https://img.shields.io/badge/python-3.11%2B-blue)
+![Licença MIT](https://img.shields.io/badge/licen%C3%A7a-MIT-yellow)
 
----
+## Problema
 
-## 📖 Table of Contents
-- [The "Why"](#the-why)
-- [System Architecture](#system-architecture)
-- [Database Schema](#database-schema)
-- [Enterprise Features](#enterprise-features)
-- [Built With](#built-with)
-- [Quick Start](#quick-start)
-- [Docker & Kubernetes Deployment](#docker--kubernetes-deployment)
+Em chão de fábrica, os dados de estoque e as medições de qualidade costumam ficar em planilhas separadas. O LinhaMestre junta os dois num só lugar: quem registra a medição de um lote vê na hora se o processo saiu de controle, e quem cuida do estoque vê o que está crítico ou vencendo.
 
----
+## Funcionalidades
 
-## 💡 The "Why"
-Industrial quality control (under ISO 8258 / ABNT NBR 5479 standards) requires reliable real-time visualization of sampling distributions and defect concentrations to prevent inventory waste. LinhaMestre bridges the gap by connecting stock tracking with statistical quality control charts, ensuring:
-- **Zero-Trust Role Permissions:** Gradated access control (Operational, Supervisor, Manager, CEO, Admin) protecting critical audit assets.
-- **ACID Transaction Safety:** Mandatory dual-writes to the operational database and audit trails.
-- **Ultra-Responsive UI:** Custom glassmorphism CSS overlays with modular plotting pipelines.
+- **Dashboard**: total de produtos, estoque crítico, itens que vencem no prazo configurado, tarefas pendentes do usuário, mensagens não lidas.
+- **Produtos**: lista com filtros (categoria, estoque, validade), cadastro, edição, exclusão com confirmação, exportação para Excel e relatórios (por categoria, críticos, validade e Pareto por status de qualidade) com exportação CSV.
+- **Controle de qualidade** (Supervisor ou acima):
+  - X-barra & R (A2, D3, D4) e X-barra & S (A3, B3, B4), subgrupos de 2 a 10;
+  - I-MR (indivíduos e amplitude móvel);
+  - as **quatro regras de Western Electric** avaliadas na série inteira, com os pontos destacados no gráfico;
+  - histograma das médias e **Cp/Cpk** a partir dos limites de especificação (LIE/LSE) que você informa, com σ estimado por R̄/d2;
+  - registro de novas medições a qualquer momento.
+- **Tarefas**: minhas tarefas, criação (Supervisor ou acima), visão geral e linha do tempo (Gerente ou acima).
+- **Mensagens** internas com resposta direta.
+- **Usuários** (Administrador) e **Configurações**: parâmetros persistidos (dias de aviso de validade, mínimo padrão), backup do banco para download e visualização da trilha de auditoria.
+- **Perfis hierárquicos**: Operacional < Supervisor < Gerente < CEO < Administrador.
+- Tema claro e escuro (segue o navegador; dá para trocar no menu do Streamlit) e layout usável em celular.
 
----
+## Como rodar
 
-## 🛠️ System Architecture
+Pré-requisito: [uv](https://docs.astral.sh/uv/) (ele instala o Python certo se precisar).
 
-```mermaid
-graph TD
-    User[Client Browser] <-->|HTTP / Websocket| StreamlitApp[Streamlit App]
-    StreamlitApp -->|Custom Theme| CSS[styles.css]
-    StreamlitApp -->|Data Processing| Pandas[Pandas & NumPy]
-    StreamlitApp -->|Interactive Visuals| Plotly[Plotly Charts]
-    
-    StreamlitApp -->|Queries & Auditing| DB[(SQLite WAL Mode)]
-```
-
----
-
-## 🗄️ Database Schema
-
-```mermaid
-erDiagram
-    USERS ||--o{ PRODUCTS : "creates"
-    USERS ||--o{ TASKS : "manages"
-    USERS ||--o{ MESSAGES : "sends"
-    USERS ||--o{ AUDIT_LOGS : "triggers"
-    PRODUCTS ||--o{ QUALITY_CONTROL : "has"
-
-    USERS {
-        int id PK
-        string username UNIQUE
-        string password
-        string name
-        string email
-        string access_level
-        string salt
-        timestamp created_at
-    }
-
-    PRODUCTS {
-        int id PK
-        string name
-        string category
-        int quantity
-        int min_quantity
-        string unit
-        string location
-        string supplier
-        real cost
-        real price
-        string barcode
-        date production_date
-        date expiry_date
-        string quality_status
-        string notes
-        int created_by FK
-        timestamp created_at
-        timestamp updated_at
-    }
-
-    AUDIT_LOGS {
-        int id PK
-        int user_id FK
-        string action
-        string details
-        timestamp created_at
-    }
-```
-
----
-
-## ✨ Enterprise Features
-1. **Glassmorphic Business Intelligence UI:** Deep dark mode palettes, responsive sidebar inputs, and glowing indicators.
-2. **Statistical Quality Charts:**
-   - **X-Bar & R (Mean/Range):** Charts tracking sample ranges over control limits (UCL, LCL).
-   - **X-Bar & S (Mean/Std Dev):** High-precision sample deviation analysis.
-   - **I-MR (Individual & Moving Range):** Sequential metrics checking for continuous processes.
-   - **Interactive Pareto Chart:** Multi-axis defect frequency bars matched against cumulative percentages.
-   - **Histograms:** Capability indexes ($Cp$) calculated automatically based on product tolerances.
-3. **Imutability Audit Log:** Automated background transaction hooks recording every product change, login, and user mutation.
-4. **SQLite WAL Mode Integration:** Write-Ahead Logging active for maximum database read concurrency.
-
----
-
-## 🧱 Built With
-- **Frontend:** Streamlit Custom Style Injection, HTML5, Plotly
-- **Data Engine:** Pandas, NumPy, Matplotlib, Seaborn
-- **Backend/DB:** Python 3.11, SQLite3 (WAL Mode)
-- **Infra:** Docker, Kubernetes (Manifests)
-
----
-
-## 🚀 Quick Start
-
-### 1. Install Dependencies
 ```bash
-pip install -r requirements.txt
+uv sync                                    # instala dependências (inclui as de desenvolvimento)
+cp .env.example .env                       # opcional; edite as variáveis
+export LINHAMESTRE_ADMIN_PASSWORD='troque-esta-senha-1'
+uv run linhamestre-seed --with-demo-users  # opcional: dados de demonstração
+uv run streamlit run linhamestre_app.py
 ```
 
-### 2. Run the Streamlit Application
+Abra <http://localhost:8501>. Sem `LINHAMESTRE_ADMIN_PASSWORD`, o primeiro boot cria o usuário `admin` com uma senha aleatória, mostrada **uma vez** no log do processo (no terminal ou em `docker logs`). Troque essa senha depois do primeiro acesso.
+
+O seed com `--with-demo-users` cria `ceo`, `gerente`, `supervisor` e `operacional` com a senha de `LINHAMESTRE_DEMO_PASSWORD` (ou com uma senha aleatória exibida no terminal). Os produtos, as medições e os fornecedores do seed são **fictícios**.
+
+## Variáveis de ambiente
+
+| Variável | Padrão | Descrição |
+| --- | --- | --- |
+| `LINHAMESTRE_DB_PATH` | `linhamestre.db` (`/data/linhamestre.db` no Docker) | Arquivo SQLite |
+| `LINHAMESTRE_ADMIN_USERNAME` | `admin` | Usuário do administrador inicial |
+| `LINHAMESTRE_ADMIN_PASSWORD` | (gerada) | Senha do administrador inicial; só é usada se o banco não tiver usuários |
+| `LINHAMESTRE_TZ` | `America/Sao_Paulo` | Fuso usado para "hoje", prazos e validade |
+| `LINHAMESTRE_LOG_LEVEL` | `INFO` | `DEBUG`, `INFO`, `WARNING`, `ERROR` |
+| `LINHAMESTRE_LOG_FORMAT` | `json` | `json` (estruturado) ou `text` |
+| `LINHAMESTRE_MAX_LOGIN_ATTEMPTS` | `5` | Falhas seguidas antes do bloqueio |
+| `LINHAMESTRE_LOCKOUT_MINUTES` | `15` | Duração do bloqueio de login |
+| `LINHAMESTRE_DEMO_PASSWORD` | (gerada) | Senha dos usuários de demonstração do seed |
+
+As variáveis são validadas no boot. Com um valor inválido, a aplicação mostra o erro e não sobe.
+
+## Scripts
+
 ```bash
-streamlit run linhamestre_app.py
+uv run pytest                 # testes (unitários + integração da interface)
+uv run pytest --cov           # com cobertura
+uv run ruff check .           # lint
+uv run ruff format .          # formatação
+uv run mypy                   # checagem de tipos (strict)
+uv run linhamestre-seed -h    # dados de demonstração
 ```
-Open [http://localhost:8501](http://localhost:8501) in your browser.
 
----
+## Arquitetura
 
-## 🐳 Docker & Kubernetes Deployment
+```
+linhamestre_app.py        entrada do Streamlit (mantém `streamlit run linhamestre_app.py`)
+seed_db.py                entrada compatível para o seed
+src/linhamestre/
+  config.py               leitura e validação das variáveis de ambiente
+  logging_setup.py        logs JSON em stdout
+  security.py             PBKDF2, política de senha, bloqueio de login
+  domain.py               regras puras: perfis, validação de produto, validade, prazos
+  spc.py                  CEP puro: constantes, limites, Western Electric, Cp/Cpk, Pareto
+  db.py                   esquema/migrações SQLite e repositório (auditoria na mesma transação)
+  seed.py                 dados de demonstração (idempotente)
+  app.py                  boot, autenticação, navegação
+  ui/                     uma página Streamlit por módulo
+tests/                    pytest + streamlit.testing (AppTest)
+```
 
-### Run with Docker Compose
-Make sure Docker is installed. Spin up the container instantly:
+Decisões:
+
+- **A regra fica fora da UI.** `spc.py` e `domain.py` não importam Streamlit nem banco, então os cálculos estatísticos são testados diretamente contra valores de referência.
+- **Uma conexão SQLite por execução do script**, em modo WAL e com `busy_timeout`. A versão anterior compartilhava um único cursor global entre todas as sessões e threads.
+- **O usuário é recarregado do banco a cada interação.** Mudar o perfil de alguém ou excluir o usuário vale na hora, sem esperar novo login.
+- **A auditoria é gravada na mesma transação da alteração** (produtos, usuários, tarefas, mensagens, medições, configurações, login/logout/falhas).
+- **O esquema é compatível com bancos da versão 1.0.** As tabelas antigas continuam iguais. No boot, a aplicação só cria `app_settings` e índices, sempre com `IF NOT EXISTS`.
+
+## Segurança
+
+- Senhas com **PBKDF2-HMAC-SHA256** (600 mil iterações) e salt aleatório, comparadas em tempo constante. Hashes legados (SHA-256 simples) continuam funcionando e são convertidos no próximo login.
+- Nenhuma senha padrão no código. O administrador inicial vem de variável de ambiente ou de uma senha aleatória.
+- Bloqueio temporário após falhas de login consecutivas, com registro na auditoria.
+- Conteúdo digitado por usuários é escapado antes de ir para o Markdown, o que impede links, imagens, LaTeX ou HTML injetados.
+- As permissões são checadas no servidor em cada página e em cada escrita. Concluir tarefas e marcar mensagens como lidas também confere quem é o dono do registro.
+- Proteção XSRF do Streamlit ativa, detalhes de erro ocultos para o usuário final e coleta de estatísticas desativada (`.streamlit/config.toml`).
+- O Streamlit não permite definir cabeçalhos HTTP (CSP, HSTS). Em produção, publique atrás de um proxy reverso com HTTPS que adicione esses cabeçalhos.
+
+## Testes
+
+São 76 testes: `spc` (limites e regras contra valores tabelados), `security`, `domain`/`config`, repositório SQLite (CRUD, filtros, permissões por dono, compatibilidade com o banco legado, backup, seed) e integração da interface com `streamlit.testing` (login, bloqueio, menu por perfil, escape de conteúdo, cadastro, mensagens, configurações, sessão derrubada ao excluir o usuário). A cobertura fica em torno de 85%.
+
+## Deploy
+
+### Docker / Compose
+
 ```bash
-docker-compose up --build
+docker compose up --build
 ```
-Access the application at [http://localhost:8501](http://localhost:8501).
 
-### Deploy to Kubernetes Cluster
-Apply the manifests to configure replication and routing:
+A imagem é multi-stage (dependências resolvidas pelo `uv.lock`), roda como usuário sem privilégios, tem `HEALTHCHECK` em `/_stcore/health` e guarda o banco no volume `/data`. Para popular com dados de demonstração:
+
 ```bash
-kubectl apply -f k8s/deployment.yaml
-kubectl apply -f k8s/service.yaml
+docker compose exec linhamestre python seed_db.py --with-demo-users
 ```
-The service is exposed as a NodePort on port `30851`.
+
+### Kubernetes
+
+```bash
+kubectl create secret generic linhamestre-secrets --from-literal=admin-password='troque-esta-senha-1'
+kubectl apply -f k8s/
+```
+
+O manifesto cria um `PersistentVolumeClaim` e usa **uma réplica** com estratégia `Recreate`, porque o SQLite é um arquivo local. O Service é `NodePort` na porta `30851`.
+
+### CI
+
+O GitHub Actions roda lint, formatação, mypy e testes. Depois constrói a imagem Docker e faz um smoke test (health check, usuário não-root, seed). O Dependabot acompanha as dependências `uv`, as Actions e a imagem base.
+
+## Limitações
+
+- SQLite, uma instância só. Para várias réplicas seria preciso migrar para um banco em rede.
+- O bloqueio de login fica em memória do processo e é zerado quando a aplicação reinicia.
+- O I-MR usa as médias registradas de cada subgrupo como valores individuais, porque o sistema não guarda medições unitárias.
+- Os gráficos de Shewhart exigem o mesmo tamanho de amostra em todos os subgrupos de um produto. Se os tamanhos variarem, a tela avisa e não calcula os limites.
+- Não há envio de e-mail nem notificações externas.
+- O backup gera um download. Para restaurar, pare a aplicação e substitua o arquivo do banco.
+
+## Licença
+
+[MIT](LICENSE) © Júlia Mendes

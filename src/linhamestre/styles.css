@@ -1,0 +1,51 @@
+/* LinhaMestre: ajustes visuais sobre o tema do Streamlit.
+   Cores vêm das variáveis do tema (claro/escuro), então funcionam nos dois modos. */
+
+/* Cartões de métrica */
+div[data-testid="stMetric"] {
+    border-radius: 14px;
+    transition: border-color 0.2s ease;
+}
+div[data-testid="stMetric"]:hover {
+    border-color: rgba(2, 132, 199, 0.55);
+}
+div[data-testid="stMetricValue"] {
+    font-weight: 700;
+}
+div[data-testid="stMetricLabel"] p {
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    font-size: 0.8rem;
+}
+
+/* Formulários e cartões */
+div[data-testid="stForm"],
+div[data-testid="stExpander"] details {
+    border-radius: 14px;
+}
+
+/* Foco visível para navegação por teclado */
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+[role="radio"]:focus-visible,
+[role="tab"]:focus-visible,
+summary:focus-visible {
+    outline: 3px solid #0284c7 !important;
+    outline-offset: 2px !important;
+}
+
+/* Telas pequenas: reduz espaçamento lateral */
+@media (max-width: 640px) {
+    .block-container {
+        padding-left: 1rem !important;
+        padding-right: 1rem !important;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    * {
+        transition: none !important;
+    }
+}

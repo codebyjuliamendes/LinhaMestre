@@ -1,13 +1,19 @@
-version: '3.8'
-
 services:
   linhamestre:
     build: .
+    image: linhamestre:local
     ports:
       - "8501:8501"
+    env_file:
+      - path: .env
+        required: false
     environment:
-      - STREAMLIT_SERVER_PORT=8501
-      - STREAMLIT_SERVER_ADDRESS=0.0.0.0
+      LINHAMESTRE_DB_PATH: /data/linhamestre.db
     volumes:
-      - .:/app
+      - linhamestre-data:/data
     restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+
+volumes:
+  linhamestre-data:
