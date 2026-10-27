@@ -1,0 +1,32 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+build/
+dist/
+
+# Ferramentas
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+coverage.xml
+htmlcov/
+
+# Dados locais (contêm hashes de senha)
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+data/
+
+# Ambiente e editores
+.env
+.env.*
+!.env.example
+*.save
+*.swp
+.DS_Store
+.idea/
+.vscode/
